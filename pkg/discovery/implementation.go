@@ -35,7 +35,7 @@ func (pi *defaultAgentImplementation) GetPackageProbe(opts options.Options, p pu
 	return nil, fmt.Errorf("purl type %s not supported", p.Type)
 }
 
-// FetchDocuments downloads all security documents using the PackageProbe for
+// FetchDocuments downloads all OpenVEX documents using the PackageProbe for
 // the specified purl.
 func (pi *defaultAgentImplementation) FetchDocuments(opts options.Options, pkgProbe VexProbe, p purl.PackageURL) ([]*vex.VEX, error) {
 	docs, err := pkgProbe.FetchDocuments(opts, p)

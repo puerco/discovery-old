@@ -42,13 +42,17 @@ func NewAgent() *Agent {
 	}
 }
 
-// Fetch probes the package url using a package prober and retrieves all the
-// security documents it can find.
+// Probe examines an OpenVEX component and retrieves all the OpenVEX documents
+// it can find by testing known locations based on its identifiers and type.
 func (agent *Agent) Probe(product vex.Component) ([]*vex.VEX, error) {
 	// TODO: Support other types of identifiers
+	// TODO: The SBOM plays an important role here as it may have references
+	// to locations contianing VEX data.
+	// TODO: Check the ID as it may be an identifier  (ie a purl)
 	if _, ok := product.Identifiers[vex.PURL]; !ok {
 		return nil, fmt.Errorf("the product does not have a supported identifier")
 	}
+
 	purlString := product.Identifiers[vex.PURL]
 	p, err := agent.impl.ParsePurl(purlString)
 	if err != nil {
