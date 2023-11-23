@@ -47,6 +47,7 @@ type defaultImplementation struct{}
 
 type localOptions struct {
 	Platform           string
+	TagPrefix          string // Attestation "image" prefix
 	Repository         string
 	RepositoryOverride string // COSIGN_REPOSITORY or other repo that overrides the purl repo
 }
@@ -132,7 +133,7 @@ func purlToRefString(opts options.Options, p purl.PackageURL) (string, error) {
 		)
 	}
 
-	// Of a repo override is set, rewrite the ref
+	// If a repo override is set, rewrite the reference
 	if opts.ProberOptions[purl.TypeOCI].(localOptions).RepositoryOverride != "" {
 		refString = fmt.Sprintf(
 			"%s/%s", strings.TrimSuffix(opts.ProberOptions[purl.TypeOCI].(localOptions).RepositoryOverride, "/"), p.Name,
@@ -171,25 +172,38 @@ func getIndexPlatforms(idx oci.SignedImageIndex) (platformList, error) {
 	return platforms, nil
 }
 
-// ResolveImageReference takes an image ref returns the image it is pointing to.
-// This process involves checking if the image is an index, a single or multi arch
-// image, if we have an archi in options, etc, etc.
+// ResolveImageReference takes an image ref returns the signed entity it is
+// pointing to. This process involves checking if the image is an index, a
+// single or multi arch image, if we have an arch in the options, etc, etc.
 func (di *defaultImplementation) ResolveImageReference(opts options.Options, ref name.Reference) (oci.SignedEntity, error) {
-	// o := options.RegistryOptions{}
-	// ctx := context.Background()
-
 	if ref == nil {
 		return nil, fmt.Errorf("got nil value when trying to resolve OCI image reference")
 	}
 
 	ociremoteOpts := []ociremote.Option{}
+
+	// TODO(puerco): Support relevant registry options
+	// o := options.RegistryOptions{}
 	// ociremoteOpts := []ociremote.Option{ociremote.WithRemoteOptions(o.GetRegistryClientOpts(ctx)...)}
-	//	if o.RefOpts.TagPrefix != "" {
-	//		opts = append(ociremoteOpts, ociremote.WithPrefix(o.RefOpts.TagPrefix))
-	//	}
-	targetRepoOverride, err := ociremote.GetEnvTargetRepository()
-	if err != nil {
-		return nil, err
+
+	// Support tag prefix
+	if opts.ProberOptions[purl.TypeOCI].(localOptions).TagPrefix != "" {
+		ociremoteOpts = append(ociremoteOpts, ociremote.WithPrefix(opts.ProberOptions[purl.TypeOCI].(localOptions).TagPrefix))
+	}
+
+	// Registry override. From options or env
+	var targetRepoOverride name.Repository
+	var err error
+	if opts.ProberOptions[purl.TypeOCI].(localOptions).RepositoryOverride != "" {
+		targetRepoOverride, err = name.NewRepository(opts.ProberOptions[purl.TypeOCI].(localOptions).RepositoryOverride)
+		if err != nil {
+			return nil, fmt.Errorf("parsing override repository option")
+		}
+	} else {
+		targetRepoOverride, err = ociremote.GetEnvTargetRepository()
+		if err != nil {
+			return nil, fmt.Errorf("fetching repository from environment")
+		}
 	}
 	if (targetRepoOverride != name.Repository{}) {
 		ociremoteOpts = append(ociremoteOpts, ociremote.WithTargetRepository(targetRepoOverride))
@@ -207,7 +221,12 @@ func (di *defaultImplementation) ResolveImageReference(opts options.Options, ref
 		return nil, fmt.Errorf("specified reference is not a multiarch image")
 	}
 
+	// If a platform was specified, then we return the corresponding
+	// single arch image if there is one
 	if opts.ProberOptions[purl.TypeOCI].(localOptions).Platform != "" && isIndex {
+		opts.Logger.DebugContext(
+			opts.Context, "Reference is an index and arch %s defined", "imageRef", ref.String(),
+		)
 		targetPlatform, err := v1.ParsePlatform(opts.ProberOptions[purl.TypeOCI].(localOptions).Platform)
 		if err != nil {
 			return nil, fmt.Errorf("parsing platform: %w", err)
@@ -278,45 +297,42 @@ func matchPlatform(base *v1.Platform, list platformList) platformList {
 
 // DownloadDocuments retrieves attested or attached document from the registry
 func (di *defaultImplementation) DownloadDocuments(opts options.Options, se oci.SignedEntity) ([]*vex.VEX, error) {
-	//	ctx := context.Background()
-
-	/*
-		ociremoteOpts, err := regOpts.ClientOpts(ctx)
-		if err != nil {
-			return err
-		}
-	*/
-	// ociremoteOpts := []ociremote.Option{}
-
 	docs := []*vex.VEX{}
 
-	// Fetch all the attestations from the registry, we'll decide which ones
-	// we want using the types in the options
-	attestations, err := cosign.FetchAttestations(se, "")
+	attestations, err := cosign.FetchAttestations(se, vex.Context)
 	if err != nil {
 		return nil, fmt.Errorf("fetching attestations: %w", err)
 	}
 
-	for _, att := range attestations {
-		// We only understand intoto attestations for now.
+	opts.Logger.DebugContext(
+		opts.Context, fmt.Sprintf("image has %d OpenVEX attestations", len(attestations)),
+	)
+	for i, att := range attestations {
 		if att.PayloadType != types.IntotoPayloadType {
 			continue
 		}
 
 		pload, err := base64.StdEncoding.DecodeString(att.PayLoad)
 		if err != nil {
-			return nil, fmt.Errorf("decoding document: %w", err)
-		}
-
-		statement := attestation.Attestation{}
-		if err := json.Unmarshal(pload, &statement); err != nil {
-			return nil, fmt.Errorf("unmarshalling attestation: %w", err)
-		}
-
-		if statement.PredicateType != vex.DefaultNamespace {
+			opts.Logger.WarnContext(
+				opts.Context, fmt.Sprintf("error decoding openvex attestation %d from base64, ignoring", i),
+			)
 			continue
 		}
 
+		statement := attestation.Attestation{}
+
+		// If the attestation could not be parsed, then we ignore it and
+		// issue a warning
+		if err := json.Unmarshal(pload, &statement); err != nil {
+			opts.Logger.WarnContext(
+				opts.Context, fmt.Sprintf("error parsing openvex attestation #%d, ignoring", i),
+			)
+			continue
+		}
+		opts.Logger.WarnContext(
+			opts.Context, fmt.Sprintf("error parsing openvex attestation #%d, skipping", i),
+		)
 		docs = append(docs, &statement.Predicate)
 	}
 

@@ -1,0 +1,1 @@
+{"critical":{"identity":{"docker-reference":"localhost:5001/wolfi-base"},"image":{"docker-manifest-digest":"sha256:4d31ef1460be2813657ce7ab3cfd0df2a7366a9b72732d4978b2794cbeb8cd32"},"type":"cosign container image signature"},"optional":null}

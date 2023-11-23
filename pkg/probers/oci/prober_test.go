@@ -3,10 +3,54 @@ package oci
 import (
 	"testing"
 
+	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/openvex/discovery/pkg/discovery/options"
 	purl "github.com/package-url/packageurl-go"
+	ociremote "github.com/sigstore/cosign/v2/pkg/oci/remote"
 	"github.com/stretchr/testify/require"
 )
+
+func TestDownloadDocuments(t *testing.T) {
+	impl := defaultImplementation{}
+	// DownloadDocuments(options.Options, oci.SignedEntity) ([]*vex.VEX, error)
+	for _, tc := range []struct {
+		name      string
+		options   options.Options
+		reference string
+		numDocs   int
+		mustErr   bool
+	}{
+		{
+			name:      "image with openvex",
+			options:   options.Default,
+			reference: "localhost:5000/wolfi-base:latest",
+			numDocs:   1,
+			mustErr:   false,
+		},
+		{
+			name:      "no attestations",
+			options:   options.Default,
+			reference: "localhost:5000/notsigned:latest",
+			mustErr:   false,
+			numDocs:   0,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ref, err := name.ParseReference(tc.reference)
+			require.NoError(t, err)
+			se, err := ociremote.SignedEntity(ref)
+			require.NoError(t, err)
+
+			docs, err := impl.DownloadDocuments(tc.options, se)
+			if tc.mustErr {
+				require.Error(t, err)
+				return
+			}
+			require.Len(t, docs, tc.numDocs)
+		})
+	}
+	require.True(t, false)
+}
 
 func TestPurlToRefString(t *testing.T) {
 	for n, tc := range map[string]struct {
