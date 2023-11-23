@@ -1,5 +1,7 @@
 package discovery
 
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+
 import (
 	"fmt"
 	"sync"
@@ -42,9 +44,13 @@ func NewAgent() *Agent {
 	}
 }
 
-// Probe examines an OpenVEX component and retrieves all the OpenVEX documents
+func (agent *Agent) SetImplementation(impl agentImplementation) {
+	agent.impl = impl
+}
+
+// ProbeComponent examines an OpenVEX component and retrieves all the OpenVEX documents
 // it can find by testing known locations based on its identifiers and type.
-func (agent *Agent) Probe(product vex.Component) ([]*vex.VEX, error) {
+func (agent *Agent) ProbeComponent(product vex.Component) ([]*vex.VEX, error) {
 	// TODO: Support other types of identifiers
 	// TODO: The SBOM plays an important role here as it may have references
 	// to locations contianing VEX data.
@@ -64,7 +70,7 @@ func (agent *Agent) Probe(product vex.Component) ([]*vex.VEX, error) {
 		return nil, fmt.Errorf("getting package probe for purl type %s: %w", p.Type, err)
 	}
 
-	docs, err := agent.impl.FetchDocuments(agent.Options, pkgProbe, p)
+	docs, err := agent.impl.FindDocumentsFromPurl(agent.Options, pkgProbe, p)
 	if err != nil {
 		return nil, fmt.Errorf("fetching documents: %w", err)
 	}

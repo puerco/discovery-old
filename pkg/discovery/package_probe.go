@@ -8,6 +8,6 @@ import (
 )
 
 type VexProbe interface {
-	FetchDocuments(options.Options, purl.PackageURL) ([]*vex.VEX, error)
+	FindDocumentsFromPurl(options.Options, purl.PackageURL) ([]*vex.VEX, error)
 	SetOptions(options.Options)
 }

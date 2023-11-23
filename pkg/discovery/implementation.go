@@ -9,10 +9,12 @@ import (
 	"github.com/openvex/discovery/pkg/discovery/options"
 )
 
+//counterfeiter:generate . agentImplementation
+
 type agentImplementation interface {
 	ParsePurl(string) (purl.PackageURL, error)
 	GetPackageProbe(options.Options, purl.PackageURL) (VexProbe, error)
-	FetchDocuments(options.Options, VexProbe, purl.PackageURL) ([]*vex.VEX, error)
+	FindDocumentsFromPurl(options.Options, VexProbe, purl.PackageURL) ([]*vex.VEX, error)
 }
 
 type defaultAgentImplementation struct{}
@@ -37,8 +39,8 @@ func (pi *defaultAgentImplementation) GetPackageProbe(opts options.Options, p pu
 
 // FetchDocuments downloads all OpenVEX documents using the PackageProbe for
 // the specified purl.
-func (pi *defaultAgentImplementation) FetchDocuments(opts options.Options, pkgProbe VexProbe, p purl.PackageURL) ([]*vex.VEX, error) {
-	docs, err := pkgProbe.FetchDocuments(opts, p)
+func (pi *defaultAgentImplementation) FindDocumentsFromPurl(opts options.Options, pkgProbe VexProbe, p purl.PackageURL) ([]*vex.VEX, error) {
+	docs, err := pkgProbe.FindDocumentsFromPurl(opts, p)
 	if err != nil {
 		return nil, fmt.Errorf("fetching documents: %w", err)
 	}
