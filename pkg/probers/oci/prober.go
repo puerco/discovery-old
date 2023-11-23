@@ -333,9 +333,7 @@ func (di *defaultImplementation) DownloadDocuments(opts options.Options, se oci.
 			)
 			continue
 		}
-		opts.Logger.WarnContext(
-			opts.Context, fmt.Sprintf("error parsing openvex attestation #%d, skipping", i),
-		)
+
 		docs = append(docs, &statement.Predicate)
 	}
 

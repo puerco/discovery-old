@@ -11,13 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestProbeComponent(t *testing.T) {
+func TestProbePurl(t *testing.T) {
 	syntErr := fmt.Errorf("synthetic error")
-	comp := vex.Component{
-		Identifiers: map[vex.IdentifierType]string{
-			vex.PURL: "pkg:oci/scratch@sha256%3A0000000000000000000000000000000000000000000000000000000000000000",
-		},
-	}
 	for _, tc := range []struct {
 		name    string
 		prepare func(*discovery.Agent)
@@ -63,7 +58,7 @@ func TestProbeComponent(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			agent := discovery.NewAgent()
 			tc.prepare(agent)
-			docs, err := agent.ProbeComponent(comp)
+			docs, err := agent.ProbePurl("pkg:oci/scratch@sha256%3A0000000000000000000000000000000000000000000000000000000000000000")
 			if tc.mustErr {
 				require.Error(t, err)
 				return

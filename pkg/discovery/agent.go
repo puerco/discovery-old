@@ -40,7 +40,7 @@ type Agent struct {
 func NewAgent() *Agent {
 	return &Agent{
 		impl:    &defaultAgentImplementation{},
-		Options: options.Options{},
+		Options: options.Default,
 	}
 }
 
@@ -48,18 +48,9 @@ func (agent *Agent) SetImplementation(impl agentImplementation) {
 	agent.impl = impl
 }
 
-// ProbeComponent examines an OpenVEX component and retrieves all the OpenVEX documents
-// it can find by testing known locations based on its identifiers and type.
-func (agent *Agent) ProbeComponent(product vex.Component) ([]*vex.VEX, error) {
-	// TODO: Support other types of identifiers
-	// TODO: The SBOM plays an important role here as it may have references
-	// to locations contianing VEX data.
-	// TODO: Check the ID as it may be an identifier  (ie a purl)
-	if _, ok := product.Identifiers[vex.PURL]; !ok {
-		return nil, fmt.Errorf("the product does not have a supported identifier")
-	}
-
-	purlString := product.Identifiers[vex.PURL]
+// ProbePURL examines an PackageURL and retrieves all the OpenVEX documents
+// it can find by testing known locations of its identifiers and type.
+func (agent *Agent) ProbePurl(purlString string) ([]*vex.VEX, error) {
 	p, err := agent.impl.ParsePurl(purlString)
 	if err != nil {
 		return nil, fmt.Errorf("validating purl: %w", err)
@@ -77,3 +68,6 @@ func (agent *Agent) ProbeComponent(product vex.Component) ([]*vex.VEX, error) {
 
 	return docs, nil
 }
+
+// TODO(puerco): ProbeSBOM
+// TODO(puerco): ProbeHash
