@@ -1,5 +1,7 @@
 package oci
 
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+
 import (
 	"encoding/base64"
 	"encoding/json"
@@ -36,6 +38,7 @@ func New() *Prober {
 	return p
 }
 
+//counterfeiter:generate . ociImplementation
 type ociImplementation interface {
 	VerifyOptions(*options.Options) error
 	PurlToReference(options.Options, purl.PackageURL) (name.Reference, error)
@@ -67,7 +70,7 @@ func (pl *platformList) String() string {
 
 // FetchDocuments implements the logic to search for OpenVEX documents
 // attached to a container image
-func (prober *Prober) FetchDocuments(opts options.Options, p purl.PackageURL) ([]*vex.VEX, error) {
+func (prober *Prober) FindDocumentsFromPurl(opts options.Options, p purl.PackageURL) ([]*vex.VEX, error) {
 	if err := prober.impl.VerifyOptions(&prober.Options); err != nil {
 		return nil, fmt.Errorf("verifying options: %w", err)
 	}
