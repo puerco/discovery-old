@@ -1,10 +1,13 @@
 package oci
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/openvex/discovery/pkg/discovery/options"
+	"github.com/openvex/discovery/pkg/probers/oci/ocifakes"
+	"github.com/openvex/go-vex/pkg/vex"
 	purl "github.com/package-url/packageurl-go"
 	ociremote "github.com/sigstore/cosign/v2/pkg/oci/remote"
 	"github.com/stretchr/testify/require"
@@ -121,5 +124,66 @@ func TestPurlToRefString(t *testing.T) {
 		}
 
 		require.Equal(t, tc.expectedReference, ref)
+	}
+}
+
+func TestFindDocumentsFromPurl(t *testing.T) {
+	prober := New()
+	p, err := purl.FromString("pkg:oci/scratch@sha256%3A0000000000000000000000000000000000000000000000000000000000000000")
+	require.NoError(t, err)
+	syntErr := fmt.Errorf("synthetic error")
+	for _, tc := range []struct {
+		name    string
+		options options.Options
+		prepare func(*Prober)
+		mustErr bool
+	}{
+		{
+			name: "success",
+			prepare: func(p *Prober) {
+				impl := &ocifakes.FakeOciImplementation{}
+				impl.PurlToReferenceReturns(name.MustParseReference("scratch"), nil)
+				impl.DownloadDocumentsReturns([]*vex.VEX{{}}, nil)
+				p.impl = impl
+			},
+		},
+		{
+			name: "purltoreference fails",
+			prepare: func(p *Prober) {
+				impl := &ocifakes.FakeOciImplementation{}
+				impl.PurlToReferenceReturns(nil, syntErr)
+				p.impl = impl
+			},
+			mustErr: true,
+		},
+		{
+			name: "resolveimagereference fails",
+			prepare: func(p *Prober) {
+				impl := &ocifakes.FakeOciImplementation{}
+				impl.ResolveImageReferenceReturns(nil, syntErr)
+				p.impl = impl
+			},
+			mustErr: true,
+		},
+		{
+			name: "dowenloaddocuments fails",
+			prepare: func(p *Prober) {
+				impl := &ocifakes.FakeOciImplementation{}
+				impl.DownloadDocumentsReturns(nil, syntErr)
+				p.impl = impl
+			},
+			mustErr: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.prepare(prober)
+			docs, err := prober.FindDocumentsFromPurl(tc.options, p)
+			if tc.mustErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, docs)
+		})
 	}
 }

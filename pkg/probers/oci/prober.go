@@ -68,7 +68,7 @@ func (pl *platformList) String() string {
 	return strings.Join(r, ", ")
 }
 
-// FetchDocuments implements the logic to search for OpenVEX documents
+// FindDocumentsFromPurl implements the logic to search for OpenVEX documents
 // attached to a container image
 func (prober *Prober) FindDocumentsFromPurl(opts options.Options, p purl.PackageURL) ([]*vex.VEX, error) {
 	if err := prober.impl.VerifyOptions(&prober.Options); err != nil {
