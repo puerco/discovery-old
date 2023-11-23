@@ -1,0 +1,52 @@
+name: Run e2e Tests
+
+on:
+   workflow_dispatch:
+#  push:
+#    tags:
+#      - 'v*'
+
+jobs:
+  oci-tests:
+    runs-on: ubuntu-latest
+
+    #permissions:
+      #contents: write # needed to write releases
+      #id-token: write # needed for keyless signing
+      #packages: write # needed for pushing the images to ghcr.io
+
+    env:
+      GO111MODULE: on
+    #  COSIGN_YES: "true"
+
+    #outputs:
+    #  hashes: ${{ steps.hash.outputs.hashes }}
+    #  tag_name: ${{ steps.tag.outputs.tag_name }}
+
+    steps:
+        - uses: imjasonh/setup-crane@v0.1
+          name: Setup crane 🪿 ♥️ 🏗️
+        - name: Install Cosign 🪿 ♥️ ·∫·
+          uses: sigstore/cosign-installer@v3.1.1
+        - name: Check out code onto GOPATH
+          uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        - name: Launch Registry
+          run: |
+            if [ "$(docker inspect -f '{{.State.Running}}' registry 2>/dev/null || true)" != 'true' ]; then
+              docker run -d --restart=always -p "127.0.0.1:5000:5000" --network bridge --name registry \
+              registry:2
+            fi
+        - name: Push Test Images
+          run: |
+            crane push ./pkg/probers/oci/testdata/wolfi-base-docker.tar localhost:5000/wolfi-base:latest
+            crane push ./pkg/probers/oci/testdata/wolfi-base-att-docker.tar localhost:5000/wolfi-base:sha256-4d31ef1460be2813657ce7ab3cfd0df2a7366a9b72732d4978b2794cbeb8cd32.att
+            crane push ./pkg/probers/oci/testdata/wolfi-base-sig-docker.tar localhost:5000/wolfi-base:sha256-4d31ef1460be2813657ce7ab3cfd0df2a7366a9b72732d4978b2794cbeb8cd32.sig
+            
+            crane digest localhost:5000/wolfi-base:latest
+            crane digest localhost:5000/wolfi-base:sha256-4d31ef1460be2813657ce7ab3cfd0df2a7366a9b72732d4978b2794cbeb8cd32.att
+            crane digest localhost:5000/wolfi-base:sha256-4d31ef1460be2813657ce7ab3cfd0df2a7366a9b72732d4978b2794cbeb8cd32.sig
+
+            cosign tree localhost:5000/wolfi-base:latest
+            cosign verify localhost:5000/wolfi-base@sha256:4d31ef1460be2813657ce7ab3cfd0df2a7366a9b72732d4978b2794cbeb8cd32 --certificate-identity=puerco@chainguard.dev --certificate-oidc-issuer=https://accounts.google.com
+            
+
