@@ -304,6 +304,13 @@ func (di *defaultImplementation) DownloadDocuments(opts options.Options, se oci.
 
 	attestations, err := cosign.FetchAttestations(se, vex.Context)
 	if err != nil {
+		// If the image has no attestations attached, cosign returns  an
+		// error. Trap it here and handle properly
+		if err.Error() == "found no attestations" {
+			opts.Logger.DebugContext(opts.Context, "image has no attestations attached")
+			return docs, nil
+		}
+
 		return nil, fmt.Errorf("fetching attestations: %w", err)
 	}
 

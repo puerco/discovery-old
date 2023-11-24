@@ -49,10 +49,10 @@ func TestDownloadDocuments(t *testing.T) {
 				require.Error(t, err)
 				return
 			}
+			require.NoError(t, err)
 			require.Len(t, docs, tc.numDocs)
 		})
 	}
-	require.True(t, false)
 }
 
 func TestPurlToRefString(t *testing.T) {
