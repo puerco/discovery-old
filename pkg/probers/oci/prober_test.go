@@ -18,7 +18,6 @@ import (
 
 func TestDownloadDocuments(t *testing.T) {
 	impl := defaultImplementation{}
-	// DownloadDocuments(options.Options, oci.SignedEntity) ([]*vex.VEX, error)
 	for _, tc := range []struct {
 		name      string
 		options   options.Options

@@ -43,6 +43,7 @@ func TestProbePurl(t *testing.T) {
 			name: "GetPackageProbe fails",
 			prepare: func(a *discovery.Agent) {
 				impl := &discoveryfakes.FakeAgentImplementation{}
+				impl.ParsePurlReturns(packageurl.PackageURL{}, nil)
 				impl.GetPackageProbeReturns(nil, syntErr)
 				a.SetImplementation(impl)
 			},
@@ -52,6 +53,7 @@ func TestProbePurl(t *testing.T) {
 			name: "FindDocumentsFromPurl fails",
 			prepare: func(a *discovery.Agent) {
 				impl := &discoveryfakes.FakeAgentImplementation{}
+				impl.ParsePurlReturns(packageurl.PackageURL{}, nil)
 				impl.FindDocumentsFromPurlReturns(nil, syntErr)
 				a.SetImplementation(impl)
 			},

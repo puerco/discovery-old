@@ -56,7 +56,7 @@ func (agent *Agent) SetImplementation(impl agentImplementation) {
 func (agent *Agent) ProbePurl(purlString string) ([]*vex.VEX, error) {
 	p, err := agent.impl.ParsePurl(purlString)
 	if err != nil {
-		return nil, fmt.Errorf("validating purl: %w", err)
+		return nil, fmt.Errorf("parsing purl: %w", err)
 	}
 
 	pkgProbe, err := agent.impl.GetPackageProbe(agent.Options, p)

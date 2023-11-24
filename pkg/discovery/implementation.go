@@ -23,10 +23,10 @@ type agentImplementation interface {
 type defaultAgentImplementation struct{}
 
 // ParsePurl checks if a purl is correctly formed
-func (pi *defaultAgentImplementation) ParsePurl(purlString string) (p purl.PackageURL, err error) {
-	p, err = purl.FromString(purlString)
+func (pi *defaultAgentImplementation) ParsePurl(purlString string) (purl.PackageURL, error) {
+	p, err := purl.FromString(purlString)
 	if err != nil {
-		return p, fmt.Errorf("verifyinf purl: %w", err)
+		return p, err
 	}
 	return p, nil
 }

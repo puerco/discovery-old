@@ -111,7 +111,6 @@ func (di *defaultImplementation) PurlToReference(opts options.Options, p purl.Pa
 	ref, err := name.ParseReference(refString)
 	if err != nil {
 		return nil, fmt.Errorf("parsing reference %s: %w", refString, err)
-
 	}
 	return ref, nil
 }
@@ -123,12 +122,12 @@ func purlToRefString(opts options.Options, p purl.PackageURL) (string, error) {
 	}
 
 	if p.Name == "" {
-		return "", errors.New("parsed pacakge URL did not return a package name")
+		return "", errors.New("parsed package URL did not return a package name")
 	}
 
 	qualifiers := p.Qualifiers.Map()
 
-	var refString = p.Name
+	refString := p.Name
 	if _, ok := qualifiers["repository_url"]; ok {
 		refString = fmt.Sprintf(
 			"%s/%s", strings.TrimSuffix(qualifiers["repository_url"], "/"), p.Name,
@@ -166,14 +165,14 @@ func getIndexPlatforms(idx oci.SignedImageIndex) (platformList, error) {
 	}
 
 	platforms := platformList{}
-	for _, m := range im.Manifests {
-		if m.Platform == nil {
+	for i := range im.Manifests {
+		if im.Manifests[i].Platform == nil {
 			continue
 		}
 		platforms = append(platforms, struct {
 			hash     v1.Hash
 			platform *v1.Platform
-		}{m.Digest, m.Platform})
+		}{im.Manifests[i].Digest, im.Manifests[i].Platform})
 	}
 	return platforms, nil
 }
