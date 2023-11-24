@@ -1,35 +1,31 @@
 name: Run e2e Tests
 
 on:
-   workflow_dispatch:
-#  push:
-#    tags:
-#      - 'v*'
+  push:
+    branches:
+      - "main"
+  pull_request:
+  workflow_dispatch:
 
 jobs:
-  oci-tests:
+  tests:
     runs-on: ubuntu-latest
-
-    #permissions:
-      #contents: write # needed to write releases
-      #id-token: write # needed for keyless signing
-      #packages: write # needed for pushing the images to ghcr.io
-
-    env:
-      GO111MODULE: on
-    #  COSIGN_YES: "true"
-
-    #outputs:
-    #  hashes: ${{ steps.hash.outputs.hashes }}
-    #  tag_name: ${{ steps.tag.outputs.tag_name }}
-
     steps:
         - uses: imjasonh/setup-crane@v0.1
           name: Setup crane 🪿 ♥️ 🏗️
+
         - name: Install Cosign 🪿 ♥️ ·∫·
           uses: sigstore/cosign-installer@v3.1.1
+
+        - uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v2.2.0
+          with:
+            go-version: '1.21'
+            check-latest: true
+            cache: true
+  
         - name: Check out code onto GOPATH
           uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
         - name: Launch Registry
           run: |
             if [ "$(docker inspect -f '{{.State.Running}}' registry 2>/dev/null || true)" != 'true' ]; then
@@ -49,5 +45,9 @@ jobs:
 
             cosign tree localhost:5000/wolfi-base:latest
             cosign verify localhost:5000/wolfi-base@sha256:4d31ef1460be2813657ce7ab3cfd0df2a7366a9b72732d4978b2794cbeb8cd32 --certificate-identity=puerco@chainguard.dev --certificate-oidc-issuer=https://accounts.google.com
+        
+        - name: Run Tests
+          run: |
+            go test -v ./...
             
 
