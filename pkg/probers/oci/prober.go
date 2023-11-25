@@ -8,7 +8,6 @@ package oci
 import (
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -23,6 +22,7 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 
 	"github.com/openvex/discovery/pkg/discovery/options"
+	doci "github.com/openvex/discovery/pkg/oci"
 	"github.com/openvex/go-vex/pkg/attestation"
 	"github.com/openvex/go-vex/pkg/vex"
 )
@@ -103,7 +103,7 @@ func (prober *Prober) FindDocumentsFromPurl(opts options.Options, p purl.Package
 // PurlToReference reads a purl and generates an image reference. It uses GGCR's
 // name package to parse it and returns the reference.
 func (di *defaultImplementation) PurlToReference(opts options.Options, p purl.PackageURL) (name.Reference, error) {
-	refString, err := purlToRefString(opts, p)
+	refString, err := doci.PurlToReferenceString(p.String())
 	if err != nil {
 		return nil, err
 	}
@@ -113,47 +113,6 @@ func (di *defaultImplementation) PurlToReference(opts options.Options, p purl.Pa
 		return nil, fmt.Errorf("parsing reference %s: %w", refString, err)
 	}
 	return ref, nil
-}
-
-// purlToRefString returns an OCI reference from an OCI purl
-func purlToRefString(opts options.Options, p purl.PackageURL) (string, error) {
-	if p.Type != purl.TypeOCI {
-		return "", errors.New("package URL is not of type OCI")
-	}
-
-	if p.Name == "" {
-		return "", errors.New("parsed package URL did not return a package name")
-	}
-
-	qualifiers := p.Qualifiers.Map()
-
-	refString := p.Name
-	if _, ok := qualifiers["repository_url"]; ok {
-		refString = fmt.Sprintf(
-			"%s/%s", strings.TrimSuffix(qualifiers["repository_url"], "/"), p.Name,
-		)
-	} else if opts.ProberOptions[purl.TypeOCI].(localOptions).Repository != "" {
-		refString = fmt.Sprintf(
-			"%s/%s", strings.TrimSuffix(opts.ProberOptions[purl.TypeOCI].(localOptions).Repository, "/"), p.Name,
-		)
-	}
-
-	// If a repo override is set, rewrite the reference
-	if opts.ProberOptions[purl.TypeOCI].(localOptions).RepositoryOverride != "" {
-		refString = fmt.Sprintf(
-			"%s/%s", strings.TrimSuffix(opts.ProberOptions[purl.TypeOCI].(localOptions).RepositoryOverride, "/"), p.Name,
-		)
-	}
-
-	if p.Version != "" {
-		refString = fmt.Sprintf("%s@%s", refString, p.Version)
-	}
-
-	// We add a tag, bu only if no digest is defined
-	if _, ok := qualifiers["tag"]; ok && p.Version == "" {
-		refString += ":" + qualifiers["tag"]
-	}
-	return refString, nil
 }
 
 // getIndexPlatforms returns the platforms of the single arch images fronted by

@@ -45,7 +45,7 @@ func (pi *defaultAgentImplementation) GetPackageProbe(opts options.Options, p pu
 func (pi *defaultAgentImplementation) FindDocumentsFromPurl(opts options.Options, pkgProbe VexProbe, p purl.PackageURL) ([]*vex.VEX, error) {
 	docs, err := pkgProbe.FindDocumentsFromPurl(opts, p)
 	if err != nil {
-		return nil, fmt.Errorf("fetching documents: %w", err)
+		return nil, fmt.Errorf("looking for documents: %w", err)
 	}
 	return docs, nil
 }
