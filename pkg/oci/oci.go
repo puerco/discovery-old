@@ -149,6 +149,15 @@ func generateImagePurlVariants(registryString, imageName, digestString, tag, os,
 	if registryString != "" {
 		qMap["repository_url"] = strings.TrimSuffix(registryString, "/")
 	}
+
+	purls = append(purls,
+		// Simple purl, no qualifiers
+		purl.NewPackageURL(
+			purl.TypeOCI, "", imageName, digestString,
+			purl.QualifiersFromMap(qMap), "",
+		).String(),
+	)
+
 	if tag != "" {
 		qMap["tag"] = tag
 	}
@@ -160,11 +169,6 @@ func generateImagePurlVariants(registryString, imageName, digestString, tag, os,
 	}
 
 	purls = append(purls,
-		// Simple purl, no qualifiers
-		purl.NewPackageURL(
-			purl.TypeOCI, "", imageName, digestString, nil, "",
-		).String(),
-
 		// Specific version with full qualifiers
 		purl.NewPackageURL(
 			purl.TypeOCI, "", imageName, digestString,
@@ -175,8 +179,47 @@ func generateImagePurlVariants(registryString, imageName, digestString, tag, os,
 	return purls
 }
 
-// purlToRefString returns an OCI reference from an OCI purl
-func PurlToReferenceString(purlString string) (string, error) {
+type purlRefConverterOptions struct {
+	// DefaultRepository will be added to the purl converter when none is found
+	// in the package url qualifiers
+	DefaultRepository string
+
+	// Override repository will always be added to the purl, overriding
+	// any that was set in the purl
+	OverrideRepository string
+}
+
+type RefConverterOptions func(*purlRefConverterOptions)
+
+func WithDefaultRepository(reg string) RefConverterOptions {
+	return func(opts *purlRefConverterOptions) {
+		opts.DefaultRepository = reg
+	}
+}
+
+func WithOverrideRepository(reg string) RefConverterOptions {
+	return func(opts *purlRefConverterOptions) {
+		opts.OverrideRepository = reg
+	}
+}
+
+// PurlToReferenceString reads a Pacakge URL of type OCI and returns an image
+// reference string. If the purl does not parse or is not of type oci: an error
+// will be returned. The function takes a few options:
+//
+//	WithDefaultRepository(string)
+//	Adds a default repository that will be used if none is defined in the
+//	purl qualifiers.
+//
+//	WithOverrideRepository(string)
+//	Overrides repository used in the reference regardless one is set in the purl
+//	or not.
+func PurlToReferenceString(purlString string, fopts ...RefConverterOptions) (string, error) {
+	opts := &purlRefConverterOptions{}
+	for _, opt := range fopts {
+		opt(opts)
+	}
+
 	p, err := purl.FromString(purlString)
 	if err != nil {
 		return "", fmt.Errorf("parsing purl string: %w", err)
@@ -197,21 +240,18 @@ func PurlToReferenceString(purlString string) (string, error) {
 		refString = fmt.Sprintf(
 			"%s/%s", strings.TrimSuffix(qualifiers["repository_url"], "/"), p.Name,
 		)
+	} else if opts.DefaultRepository != "" {
+		refString = fmt.Sprintf(
+			"%s/%s", strings.TrimSuffix(opts.DefaultRepository, "/"), p.Name,
+		)
 	}
-	/*
-		else if opts.ProberOptions[purl.TypeOCI].(localOptions).Repository != "" {
-			refString = fmt.Sprintf(
-				"%s/%s", strings.TrimSuffix(opts.ProberOptions[purl.TypeOCI].(localOptions).Repository, "/"), p.Name,
-			)
-		}
 
-		// If a repo override is set, rewrite the reference
-		if opts.ProberOptions[purl.TypeOCI].(localOptions).RepositoryOverride != "" {
-			refString = fmt.Sprintf(
-				"%s/%s", strings.TrimSuffix(opts.ProberOptions[purl.TypeOCI].(localOptions).RepositoryOverride, "/"), p.Name,
-			)
-		}
-	*/
+	// If a repo override is set, rewrite the reference
+	if opts.OverrideRepository != "" {
+		refString = fmt.Sprintf(
+			"%s/%s", strings.TrimSuffix(opts.OverrideRepository, "/"), p.Name,
+		)
+	}
 
 	if p.Version != "" {
 		refString = fmt.Sprintf("%s@%s", refString, p.Version)
