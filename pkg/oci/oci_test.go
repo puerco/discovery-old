@@ -147,8 +147,6 @@ func TestPurlToReferenceString(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			//opts := options.Default
-			//opts.ProberOptions[purl.TypeOCI] = tc.options
 			ref, err := PurlToReferenceString(tc.testInput, tc.options...)
 			if tc.mustError {
 				require.Error(t, err, n)
