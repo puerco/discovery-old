@@ -1,0 +1,52 @@
+{
+  "@context": "https://openvex.dev/ns/v0.2.0",
+  "@id": "https://openvex.dev/docs/public/vex-bcdbbda13e54cc51f1b15bee62cd470a390cece3a15e90081a55f961afad7402",
+  "author": "mailto:openvex@openssf.org",
+  "timestamp": "2023-11-25T16:10:48.672816887-06:00",
+  "last_updated": "2023-11-25T16:11:11.546716349-06:00",
+  "version": 2,
+  "statements": [
+    {
+      "vulnerability": {
+        "name": "CVE-2023-5363"
+      },
+      "timestamp": "2023-11-25T16:10:48.672817722-06:00",
+      "products": [
+        {
+          "@id": "pkg:oci/alpine-cves@sha256%3Aeece025e432126ce23f223450a0326fbebde39cdf496a85d8c016293fc851978",
+          "subcomponents": [
+            {
+              "@id": "pkg:apk/alpine/libcrypto3@3.1.3-r0"
+            },
+            {
+              "@id": "pkg:apk/alpine/libssl3@3.1.3-r0"
+            }
+          ]
+        }
+      ],
+      "status": "not_affected",
+      "justification": "inline_mitigations_already_exist"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2023-5678"
+      },
+      "timestamp": "2023-11-25T16:11:11.54671684-06:00",
+      "products": [
+        {
+          "@id": "pkg:oci/alpine-cves@sha256%3A48d9183eb12a05c99bcc0bf44a003607b8e941e1d4f41f9ad12bdcc4b5672f86",
+          "subcomponents": [
+            {
+              "@id": "pkg:apk/alpine/libcrypto3@3.1.3-r0"
+            },
+            {
+              "@id": "pkg:apk/alpine/libssl3@3.1.3-r0"
+            }
+          ]
+        }
+      ],
+      "status": "not_affected",
+      "justification": "inline_mitigations_already_exist"
+    }
+  ]
+}
