@@ -23,12 +23,28 @@ var (
 )
 
 func init() {
+	RegisterBuiltInDrivers()
+}
+
+// RegisterBuiltInDrivers adds all the built in backend drivers to the
+// VexProbers collection.
+func RegisterBuiltInDrivers() {
 	RegisterDriver(purl.TypeOCI, oci.New())
 }
 
+// RegisterDriver adds a new VexProbe to the drivers collection.
 func RegisterDriver(purlType string, probe VexProbe) {
 	regMtx.Lock()
 	probers[purlType] = probe
+	regMtx.Unlock()
+}
+
+// UnregisterDrivers removes all registered backend drivers from the probers
+// collection. This is useful when you want to enable only specific drivers
+// or register custom ones.
+func UnregisterDrivers() {
+	regMtx.Lock()
+	probers = map[string]VexProbe{}
 	regMtx.Unlock()
 }
 
