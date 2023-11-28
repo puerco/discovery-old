@@ -31,9 +31,7 @@ func (bundle *IdentifiersBundle) ToStringSlice() []string {
 	ret := []string{}
 	if bundle.Identifiers != nil {
 		for _, sl := range bundle.Identifiers {
-			for _, id := range sl {
-				ret = append(ret, id)
-			}
+			ret = append(ret, sl...)
 		}
 	}
 
@@ -203,7 +201,7 @@ func WithOverrideRepository(reg string) RefConverterOptions {
 	}
 }
 
-// PurlToReferenceString reads a Pacakge URL of type OCI and returns an image
+// PurlToReferenceString reads a Package URL of type OCI and returns an image
 // reference string. If the purl does not parse or is not of type oci: an error
 // will be returned. The function takes a few options:
 //
