@@ -15,7 +15,7 @@ jobs:
           name: Setup crane 🪿 ♥️ 🏗️
 
         - name: Install Cosign 🪿 ♥️ ·∫·
-          uses: sigstore/cosign-installer@v3.2.0
+          uses: sigstore/cosign-installer@v3.4.0
 
         - uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v2.2.0
           with:
